@@ -61,14 +61,45 @@
             margin-bottom: 8px;
         }
 
+        .input-container {
+            display: flex;
+            gap: 10px;
+            align-items: stretch;
+        }
+
         input[type="text"] {
-            width: 100%;
+            flex: 1;
             padding: 15px;
             border: 2px solid #E5E5E5;
             border-radius: 10px;
             font-size: 16px;
             transition: border-color 0.3s ease;
             background-color: #F8F9FA;
+        }
+
+        .paste-btn {
+            background: #f0f0f0;
+            border: 2px solid #E5E5E5;
+            border-radius: 10px;
+            padding: 15px 20px;
+            font-size: 16px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            color: #666;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            min-width: 60px;
+        }
+
+        .paste-btn:hover {
+            background: #e0e0e0;
+            border-color: #ccc;
+            color: #333;
+        }
+
+        .paste-btn:active {
+            background: #d0d0d0;
         }
 
         input[type="text"]:focus {
@@ -150,6 +181,15 @@
             h1 {
                 font-size: 20px;
             }
+
+            .input-container {
+                gap: 8px;
+            }
+
+            .paste-btn {
+                min-width: 50px;
+                padding: 15px 12px;
+            }
         }
     </style>
 </head>
@@ -161,12 +201,17 @@
         
         <div class="input-group">
             <label for="phoneNumber">Phone Number</label>
-            <input 
-                type="text" 
-                id="phoneNumber" 
-                placeholder="050-123-4567 or +972 50 123 4567" 
-                autocomplete="off"
-            >
+            <div class="input-container">
+                <input 
+                    type="text" 
+                    id="phoneNumber" 
+                    placeholder="050-123-4567 or +972 50 123 4567" 
+                    autocomplete="off"
+                >
+                <button class="paste-btn" onclick="pasteFromClipboard()" title="Paste from clipboard">
+                    📋
+                </button>
+            </div>
         </div>
         
         <button class="btn" onclick="generateWhatsAppLink()">
@@ -191,20 +236,6 @@
             // Auto-focus on the input
             phoneInput.focus();
             
-            // Try to paste clipboard content if available (works on some browsers)
-            phoneInput.addEventListener('focus', function() {
-                if (navigator.clipboard && navigator.clipboard.readText) {
-                    navigator.clipboard.readText().then(function(text) {
-                        if (text && isIsraeliPhoneNumber(text.trim())) {
-                            phoneInput.value = text.trim();
-                            generateWhatsAppLink();
-                        }
-                    }).catch(function() {
-                        // Clipboard access not available or denied
-                    });
-                }
-            });
-            
             // Generate link on Enter key
             phoneInput.addEventListener('keypress', function(e) {
                 if (e.key === 'Enter') {
@@ -223,6 +254,32 @@
             // Check if it looks like an Israeli number
             const cleaned = phone.replace(/\D/g, '');
             return cleaned.startsWith('972') || cleaned.startsWith('05') || cleaned.length >= 9;
+        }
+
+        async function pasteFromClipboard() {
+            try {
+                if (navigator.clipboard && navigator.clipboard.readText) {
+                    const text = await navigator.clipboard.readText();
+                    if (text) {
+                        const phoneInput = document.getElementById('phoneNumber');
+                        phoneInput.value = text.trim();
+                        phoneInput.focus();
+                        
+                        // Auto-generate link if it looks like a phone number
+                        if (isIsraeliPhoneNumber(text.trim())) {
+                            generateWhatsAppLink();
+                        }
+                        
+                        hideError();
+                        hideResult();
+                    }
+                } else {
+                    showError('Clipboard access is not available in this browser. Please paste manually.');
+                }
+            } catch (err) {
+                console.error('Failed to read clipboard: ', err);
+                showError('Unable to access clipboard. Please paste manually or grant clipboard permissions.');
+            }
         }
 
         function normalizeIsraeliPhoneNumber(phone) {
