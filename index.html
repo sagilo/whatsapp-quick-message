@@ -1,0 +1,324 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>WhatsApp Quick Message</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+            background: linear-gradient(135deg, #25D366 0%, #128C7E 100%);
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
+        }
+
+        .container {
+            background: white;
+            border-radius: 20px;
+            padding: 40px;
+            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.1);
+            max-width: 400px;
+            width: 100%;
+            text-align: center;
+        }
+
+        .whatsapp-icon {
+            font-size: 60px;
+            margin-bottom: 20px;
+            color: #25D366;
+        }
+
+        h1 {
+            color: #333;
+            margin-bottom: 10px;
+            font-size: 24px;
+        }
+
+        p {
+            color: #666;
+            margin-bottom: 30px;
+            line-height: 1.5;
+        }
+
+        .input-group {
+            margin-bottom: 20px;
+            text-align: left;
+        }
+
+        label {
+            display: block;
+            color: #333;
+            font-weight: 500;
+            margin-bottom: 8px;
+        }
+
+        input[type="text"] {
+            width: 100%;
+            padding: 15px;
+            border: 2px solid #E5E5E5;
+            border-radius: 10px;
+            font-size: 16px;
+            transition: border-color 0.3s ease;
+            background-color: #F8F9FA;
+        }
+
+        input[type="text"]:focus {
+            outline: none;
+            border-color: #25D366;
+            background-color: white;
+        }
+
+        .btn {
+            background: linear-gradient(135deg, #25D366 0%, #128C7E 100%);
+            color: white;
+            border: none;
+            padding: 15px 30px;
+            border-radius: 10px;
+            font-size: 16px;
+            font-weight: 600;
+            cursor: pointer;
+            width: 100%;
+            transition: transform 0.2s ease, box-shadow 0.2s ease;
+            text-decoration: none;
+            display: inline-block;
+            margin-top: 10px;
+        }
+
+        .btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 10px 20px rgba(37, 211, 102, 0.3);
+        }
+
+        .btn:active {
+            transform: translateY(0);
+        }
+
+        .btn:disabled {
+            background: #ccc;
+            cursor: not-allowed;
+            transform: none;
+            box-shadow: none;
+        }
+
+        .result {
+            margin-top: 20px;
+            padding: 15px;
+            background: #F8F9FA;
+            border-radius: 10px;
+            display: none;
+        }
+
+        .result.show {
+            display: block;
+        }
+
+        .formatted-number {
+            font-weight: 600;
+            color: #25D366;
+            margin-bottom: 10px;
+        }
+
+        .error {
+            color: #dc3545;
+            background: #f8d7da;
+            border: 1px solid #f5c6cb;
+            padding: 10px;
+            border-radius: 5px;
+            margin-top: 10px;
+            display: none;
+        }
+
+        .error.show {
+            display: block;
+        }
+
+        @media (max-width: 480px) {
+            .container {
+                padding: 30px 20px;
+                margin: 10px;
+            }
+            
+            h1 {
+                font-size: 20px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="whatsapp-icon">📱</div>
+        <h1>WhatsApp Quick Message</h1>
+        <p>Paste an Israeli phone number and create a WhatsApp message link instantly</p>
+        
+        <div class="input-group">
+            <label for="phoneNumber">Phone Number</label>
+            <input 
+                type="text" 
+                id="phoneNumber" 
+                placeholder="050-123-4567 or +972 50 123 4567" 
+                autocomplete="off"
+            >
+        </div>
+        
+        <button class="btn" onclick="generateWhatsAppLink()">
+            Generate WhatsApp Link
+        </button>
+        
+        <div class="error" id="error"></div>
+        
+        <div class="result" id="result">
+            <div class="formatted-number" id="formattedNumber"></div>
+            <a href="#" id="whatsappLink" class="btn" target="_blank">
+                Open WhatsApp Chat
+            </a>
+        </div>
+    </div>
+
+    <script>
+        // Auto-paste functionality for mobile devices
+        document.addEventListener('DOMContentLoaded', function() {
+            const phoneInput = document.getElementById('phoneNumber');
+            
+            // Auto-focus on the input
+            phoneInput.focus();
+            
+            // Try to paste clipboard content if available (works on some browsers)
+            phoneInput.addEventListener('focus', function() {
+                if (navigator.clipboard && navigator.clipboard.readText) {
+                    navigator.clipboard.readText().then(function(text) {
+                        if (text && isIsraeliPhoneNumber(text.trim())) {
+                            phoneInput.value = text.trim();
+                            generateWhatsAppLink();
+                        }
+                    }).catch(function() {
+                        // Clipboard access not available or denied
+                    });
+                }
+            });
+            
+            // Generate link on Enter key
+            phoneInput.addEventListener('keypress', function(e) {
+                if (e.key === 'Enter') {
+                    generateWhatsAppLink();
+                }
+            });
+            
+            // Real-time validation and formatting
+            phoneInput.addEventListener('input', function() {
+                hideError();
+                hideResult();
+            });
+        });
+
+        function isIsraeliPhoneNumber(phone) {
+            // Check if it looks like an Israeli number
+            const cleaned = phone.replace(/\D/g, '');
+            return cleaned.startsWith('972') || cleaned.startsWith('05') || cleaned.length >= 9;
+        }
+
+        function normalizeIsraeliPhoneNumber(phone) {
+            if (!phone) return null;
+            
+            // Remove all non-digit characters
+            let cleaned = phone.replace(/\D/g, '');
+            
+            // Handle different Israeli phone number formats
+            if (cleaned.startsWith('972')) {
+                // Already in international format without +
+                return cleaned;
+            } else if (cleaned.startsWith('05')) {
+                // Israeli mobile format starting with 05
+                if (cleaned.length === 10) {
+                    return '972' + cleaned.substring(1); // Remove the leading 0 and add 972
+                }
+            } else if (cleaned.startsWith('0')) {
+                // Any Israeli number starting with 0
+                if (cleaned.length >= 9) {
+                    return '972' + cleaned.substring(1); // Remove the leading 0 and add 972
+                }
+            } else if (cleaned.length === 9) {
+                // 9 digit number without leading 0 (mobile without 0)
+                return '972' + cleaned;
+            } else if (cleaned.length === 8) {
+                // 8 digit landline number
+                return '972' + cleaned;
+            }
+            
+            return null; // Invalid format
+        }
+
+        function formatDisplayNumber(normalizedNumber) {
+            if (!normalizedNumber || !normalizedNumber.startsWith('972')) return normalizedNumber;
+            
+            const withoutCountryCode = normalizedNumber.substring(3);
+            if (withoutCountryCode.length === 9) {
+                // Mobile number: 05X-XXX-XXXX
+                return `+972 ${withoutCountryCode.substring(0, 2)}-${withoutCountryCode.substring(2, 5)}-${withoutCountryCode.substring(5)}`;
+            } else if (withoutCountryCode.length === 8) {
+                // Landline: 0X-XXX-XXXX  
+                return `+972 ${withoutCountryCode.substring(0, 1)}-${withoutCountryCode.substring(1, 4)}-${withoutCountryCode.substring(4)}`;
+            }
+            
+            return `+972 ${withoutCountryCode}`;
+        }
+
+        function generateWhatsAppLink() {
+            const phoneInput = document.getElementById('phoneNumber');
+            const phone = phoneInput.value.trim();
+            
+            hideError();
+            hideResult();
+            
+            if (!phone) {
+                showError('Please enter a phone number');
+                return;
+            }
+            
+            const normalizedNumber = normalizeIsraeliPhoneNumber(phone);
+            
+            if (!normalizedNumber) {
+                showError('Please enter a valid Israeli phone number');
+                return;
+            }
+            
+            // Create WhatsApp link
+            const whatsappUrl = `https://wa.me/${normalizedNumber}`;
+            const displayNumber = formatDisplayNumber(normalizedNumber);
+            
+            // Update result display
+            document.getElementById('formattedNumber').textContent = displayNumber;
+            document.getElementById('whatsappLink').href = whatsappUrl;
+            
+            showResult();
+        }
+
+        function showError(message) {
+            const errorElement = document.getElementById('error');
+            errorElement.textContent = message;
+            errorElement.classList.add('show');
+        }
+
+        function hideError() {
+            const errorElement = document.getElementById('error');
+            errorElement.classList.remove('show');
+        }
+
+        function showResult() {
+            document.getElementById('result').classList.add('show');
+        }
+
+        function hideResult() {
+            document.getElementById('result').classList.remove('show');
+        }
+    </script>
+</body>
+</html>
